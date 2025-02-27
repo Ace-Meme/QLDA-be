@@ -15,6 +15,17 @@ spring:
     open-in-view: false
   jta:
     enabled: false
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: phamducthang2508@gmail.com
+    password: jqoaqrlhkdzqjdxz
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
+app:
+  base-url: ${APP_BASE_URL:http://localhost:8080}
 
 springdoc:
   show-actuator: true

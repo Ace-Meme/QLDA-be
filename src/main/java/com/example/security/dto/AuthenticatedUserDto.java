@@ -18,4 +18,5 @@ public class AuthenticatedUserDto {
 
 	private UserRole userRole;
 
+	private boolean emailVerified;
 }

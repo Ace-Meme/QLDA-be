@@ -33,6 +33,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 			throw new UsernameNotFoundException(USERNAME_OR_PASSWORD_INVALID);
 		}
 
+		if (!authenticatedUser.isEmailVerified()) {
+            log.warn("Login attempt with unverified email for user: {}", username);
+            throw new UsernameNotFoundException("Please verify your email before logging in");
+        }
+
 		final String authenticatedUsername = authenticatedUser.getUsername();
 		final String authenticatedPassword = authenticatedUser.getPassword();
 		final UserRole userRole = authenticatedUser.getUserRole();

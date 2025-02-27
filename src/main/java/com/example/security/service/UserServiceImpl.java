@@ -13,6 +13,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import java.time.LocalDateTime;
+import java.util.UUID;
+import com.example.service.EmailService;
 
 @Slf4j
 @Service
@@ -29,6 +32,8 @@ public class UserServiceImpl implements UserService {
 
 	private final GeneralMessageAccessor generalMessageAccessor;
 
+	private final EmailService emailService;
+
 	@Override
 	public User findByUsername(String username) {
 
@@ -43,8 +48,13 @@ public class UserServiceImpl implements UserService {
 		final User user = UserMapper.INSTANCE.convertToUser(registrationRequest);
 		user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
 		user.setUserRole(UserRole.USER);
+		user.setEmailVerified(false);
+        user.setEmailVerificationToken(UUID.randomUUID().toString());
+        user.setEmailVerificationTokenExpiry(LocalDateTime.now().plusHours(24));
 
 		userRepository.save(user);
+
+		emailService.sendVerificationEmail(user.getEmail(), user.getEmailVerificationToken());
 
 		final String username = registrationRequest.getUsername();
 		final String registrationSuccessMessage = generalMessageAccessor.getMessage(null, REGISTRATION_SUCCESSFUL,
