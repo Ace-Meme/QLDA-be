@@ -35,7 +35,7 @@ public class SecurityConfiguration {
 
 		return http
 				.csrf(CsrfConfigurer::disable)
-				.cors(CorsConfigurer::disable)
+				.cors(Customizer.withDefaults())
 				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 				.authorizeHttpRequests(request -> request.requestMatchers("/register",
 																	      "/login",
