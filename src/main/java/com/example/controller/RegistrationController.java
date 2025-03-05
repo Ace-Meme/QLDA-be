@@ -16,13 +16,23 @@ import org.springframework.web.bind.annotation.*;
 public class RegistrationController {
 
 	private final UserService userService;
-
-	@PostMapping
-	@Operation(tags = "Register Service", description = "You can register to the system by sending information in the appropriate format.")
-	public ResponseEntity<RegistrationResponse> registrationRequest(
+	
+	@PostMapping("/student")
+	@Operation(tags = "Register Service", description = "Register as a student")
+	public ResponseEntity<RegistrationResponse> studentRegistration(
 			@Valid @RequestBody RegistrationRequest registrationRequest) {
 
-		final RegistrationResponse registrationResponse = userService.registration(registrationRequest);
+		final RegistrationResponse registrationResponse = userService.registerStudent(registrationRequest);
+
+		return ResponseEntity.status(HttpStatus.CREATED).body(registrationResponse);
+	}
+
+	@PostMapping("/teacher")
+	@Operation(tags = "Register Service", description = "Register as a teacher")
+	public ResponseEntity<RegistrationResponse> teacherRegistration(
+			@Valid @RequestBody RegistrationRequest registrationRequest) {
+
+		final RegistrationResponse registrationResponse = userService.registerTeacher(registrationRequest);
 
 		return ResponseEntity.status(HttpStatus.CREATED).body(registrationResponse);
 	}

@@ -40,7 +40,19 @@ public class JwtTokenService {
 
 		log.info("{} has successfully logged in!", user.getUsername());
 
-		return new LoginResponse(token);
-	}
+		// Get the full user object to include all necessary information
+		User fullUser = userService.findByUsername(username);
 
+		return new LoginResponse(
+			token,
+			fullUser.getUsername(),
+			fullUser.getName(),
+			fullUser.getEmail(),
+			fullUser.getFullName(),
+			fullUser.getGender(),
+			fullUser.getBirthYear(),
+			fullUser.getPhoneNumber(),
+			fullUser.getUserRole()
+		);
+	}
 }

@@ -37,7 +37,8 @@ public class SecurityConfiguration {
 				.csrf(CsrfConfigurer::disable)
 				.cors(Customizer.withDefaults())
 				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-				.authorizeHttpRequests(request -> request.requestMatchers("/register",
+				.authorizeHttpRequests(request -> request.requestMatchers("/register/student",
+																	      "/register/teacher",
 																	      "/login",
 																	      "/v3/api-docs/**",
 																          "/swagger-ui/**",
