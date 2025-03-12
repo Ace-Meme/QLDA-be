@@ -44,7 +44,8 @@ public class SecurityConfiguration {
 																          "/swagger-ui/**",
 																		  "/verify-email",
 																	      "/swagger-ui.html",
-																	      "/actuator/**")
+																	      "/actuator/**",
+																		  "/courses/**")
 													   .permitAll()
 													   .anyRequest()
 													   .authenticated())

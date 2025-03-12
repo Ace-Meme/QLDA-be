@@ -2,11 +2,16 @@ server:
   http2:
     enabled: true
 
+supabase:
+  url: ${SUPABASE_URL:https://tejxnmdirdoauqjffpph.supabase.co/storage/v1/s3}
+  key: ${SUPABASE_KEY:9a5831b2f6e805681af519876fc670404ac566f0d95df222418b6594841a03bd}
+  bucket: ${SUPABASE_BUCKET:Qldapm}
+
 spring:
   datasource:
-    url: ${SUPABASE_DB_URL:jdbc:postgresql://db.tejxnmdirdoauqjffpph.supabase.co:5432/postgres}
-    username: ${SUPABASE_DB_USER:postgres}
-    password: ${SUPABASE_DB_PASSWORD:bUVy7hJnfnpaUbXA}
+    url: ${SUPABASE_DB_URL:jdbc:postgresql://aws-0-us-west-1.pooler.supabase.com:5432/postgres}
+    username: ${SUPABASE_DB_USER:postgres.tejxnmdirdoauqjffpph}
+    password: ${SUPABASE_DB_PASSWORD:89PBR0XIvsRQBRyi}
     hikari:
       pool-name: SpringBootBoilerplateHikariPool
   jpa:
