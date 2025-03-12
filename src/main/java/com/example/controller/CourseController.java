@@ -1,9 +1,11 @@
 package com.example.controller;
 
-import com.example.dto.CourseCreateDto;
-import com.example.dto.CourseDetailDto;
-import com.example.dto.CourseDto;
+import com.example.dto.*;
 import com.example.service.CourseService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -26,12 +28,27 @@ public class CourseController {
 
     @GetMapping
     @Operation(
-        summary = "Get all published courses",
-        description = "Retrieves a list of all published courses with summary information"
+        summary = "Get published courses",
+        description = "Retrieves a list of published courses with optional filtering by name and teacher, with pagination"
     )
-    public ResponseEntity<List<CourseDto>> getAllCourses() {
-        List<CourseDto> courses = courseService.getAllPublishedCourses();
-        return ResponseEntity.ok(courses);
+    public ResponseEntity<?> getCourses(
+            @Parameter(description = "Course name to search for") 
+            @RequestParam(required = false) String name,
+            
+            @Parameter(description = "Teacher name to search for") 
+            @RequestParam(required = false) String teacher,
+            
+            @Parameter(description = "Page number (0-based)") 
+            @RequestParam(required = false) Integer page,
+            
+            @Parameter(description = "Page size") 
+            @RequestParam(required = false) Integer size) {
+
+        page = page == null ? 0 : page;
+        size = size == null ? 10 : size;
+        
+        PagedResponseDto<CourseDto> pagedResponse = courseService.getPublishedCourses(name, teacher, page, size);
+        return ResponseEntity.ok(pagedResponse);
     }
 
     @GetMapping("/{courseId}")

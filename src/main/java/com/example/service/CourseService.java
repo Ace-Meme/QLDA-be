@@ -1,6 +1,6 @@
 package com.example.service;
 
-import com.example.dto.CourseCreateDto;
+import com.example.dto.*;
 import com.example.dto.CourseDetailDto;
 import com.example.dto.CourseDto;
 import com.example.dto.LearningItemDto;
@@ -13,6 +13,10 @@ import com.example.repository.CourseRepository;
 import com.example.repository.LearningItemRepository;
 import com.example.repository.UserRepository;
 import com.example.repository.WeekRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,6 +38,30 @@ public class CourseService {
     public List<CourseDto> getAllPublishedCourses() {
         List<Course> courses = courseRepository.findByIsDraftFalse();
         return courses.stream().map(this::mapToCourseDto).collect(Collectors.toList());
+    }
+    
+    @Transactional(readOnly = true)
+    public PagedResponseDto<CourseDto> getPublishedCourses(String name, String teacher, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
+        
+        // Convert search parameters to lowercase if they're not null
+        String searchName = name != null ? name.toLowerCase() : null;
+        String searchTeacher = teacher != null ? teacher.toLowerCase() : null;
+        
+        Page<Course> coursePage = courseRepository.findPublishedCoursesByNameAndTeacher(searchName, searchTeacher, pageable);
+        
+        List<CourseDto> courseDtos = coursePage.getContent().stream()
+                .map(this::mapToCourseDto)
+                .collect(Collectors.toList());
+        
+        return PagedResponseDto.<CourseDto>builder()
+                .content(courseDtos)
+                .page(coursePage.getNumber())
+                .size(coursePage.getSize())
+                .totalElements(coursePage.getTotalElements())
+                .totalPages(coursePage.getTotalPages())
+                .last(coursePage.isLast())
+                .build();
     }
 
     @Transactional(readOnly = true)
