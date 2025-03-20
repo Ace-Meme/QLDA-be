@@ -15,8 +15,8 @@ import lombok.ToString;
 @NoArgsConstructor
 public class RegistrationRequest {
 
-	@NotEmpty(message = "{registration_name_not_empty}")
-	private String name;
+//	@NotEmpty(message = "{registration_name_not_empty}")
+//	private String name;
 
 	@Email(message = "{registration_email_is_not_valid}")
 	@NotEmpty(message = "{registration_email_not_empty}")
