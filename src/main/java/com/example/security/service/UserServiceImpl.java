@@ -55,7 +55,7 @@ public class UserServiceImpl implements UserService {
 
 		emailService.sendVerificationEmail(user.getEmail(), user.getEmailVerificationToken());
 
-		final String username = registrationRequest.getUsername();
+		final String username = registrationRequest.getUserName();
 		final String registrationSuccessMessage = generalMessageAccessor.getMessage(null, REGISTRATION_SUCCESSFUL,
 				username);
 
@@ -79,7 +79,7 @@ public class UserServiceImpl implements UserService {
 
 		emailService.sendVerificationEmail(user.getEmail(), user.getEmailVerificationToken());
 
-		final String username = registrationRequest.getUsername();
+		final String username = registrationRequest.getUserName();
 		final String registrationSuccessMessage = generalMessageAccessor.getMessage(null, REGISTRATION_SUCCESSFUL,
 				username);
 

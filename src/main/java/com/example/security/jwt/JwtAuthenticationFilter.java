@@ -29,52 +29,110 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 	private final UserDetailsServiceImpl userDetailsService;
 
-	@Override
-	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
-			throws IOException, ServletException {
+//	@Override
+//	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+//			throws IOException, ServletException {
 
-		final String header = request.getHeader(SecurityConstants.HEADER_STRING);
+//		final String header = request.getHeader(SecurityConstants.HEADER_STRING);
+//
+//		String username = null;
+//		String authToken = null;
+//		if (Objects.nonNull(header) && header.startsWith(SecurityConstants.TOKEN_PREFIX)) {
+//
+//			authToken = header.replace(SecurityConstants.TOKEN_PREFIX, Strings.EMPTY);
+//
+//			try {
+//				username = jwtTokenManager.getUsernameFromToken(authToken);
+//			} catch (Exception e) {
+//				log.error("Authentication Exception : {}", e.getMessage());
+//				chain.doFilter(request, response);
+//				return;
+//			}
+//		}
+//
+//		final SecurityContext securityContext = SecurityContextHolder.getContext();
+//
+//		final boolean canBeStartTokenValidation = Objects.nonNull(username)
+//				&& Objects.isNull(securityContext.getAuthentication());
+//
+//		if (!canBeStartTokenValidation) {
+//			chain.doFilter(request, response);
+//			return;
+//		}
+//
+//		final UserDetails user = userDetailsService.loadUserByUsername(username);
+//		final boolean validToken = jwtTokenManager.validateToken(authToken, user.getUsername());
+//
+//		if (!validToken) {
+//			chain.doFilter(request, response);
+//			return;
+//		}
+//
+//		final UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, null,
+//				user.getAuthorities());
+//		authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+//		securityContext.setAuthentication(authentication);
+//
+//		log.info("Authentication successful. Logged in username : {} ", username);
+//
+//		chain.doFilter(request, response);
+		@Override
+		protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+        throws IOException, ServletException {
 
-		String username = null;
-		String authToken = null;
-		if (Objects.nonNull(header) && header.startsWith(SecurityConstants.TOKEN_PREFIX)) {
+			String requestURI = request.getRequestURI();
 
-			authToken = header.replace(SecurityConstants.TOKEN_PREFIX, Strings.EMPTY);
-
-			try {
-				username = jwtTokenManager.getUsernameFromToken(authToken);
-			} catch (Exception e) {
-				log.error("Authentication Exception : {}", e.getMessage());
+			// Bỏ qua xác thực JWT cho các API không yêu cầu đăng nhập
+			if (requestURI.startsWith("/register/student") ||
+					requestURI.startsWith("/register/teacher") ||
+					requestURI.startsWith("/login")) {
+				log.info("Skipping JWT authentication for {}", requestURI);
 				chain.doFilter(request, response);
 				return;
 			}
-		}
 
-		final SecurityContext securityContext = SecurityContextHolder.getContext();
+			final String header = request.getHeader(SecurityConstants.HEADER_STRING);
+			String username = null;
+			String authToken = null;
 
-		final boolean canBeStartTokenValidation = Objects.nonNull(username)
-				&& Objects.isNull(securityContext.getAuthentication());
+			if (Objects.nonNull(header) && header.startsWith(SecurityConstants.TOKEN_PREFIX)) {
+				authToken = header.replace(SecurityConstants.TOKEN_PREFIX, Strings.EMPTY);
 
-		if (!canBeStartTokenValidation) {
+				try {
+					username = jwtTokenManager.getUsernameFromToken(authToken);
+				} catch (Exception e) {
+					log.error("Authentication Exception : {}", e.getMessage());
+					chain.doFilter(request, response);
+					return;
+				}
+			}
+
+			final SecurityContext securityContext = SecurityContextHolder.getContext();
+			final boolean canBeStartTokenValidation = Objects.nonNull(username)
+					&& Objects.isNull(securityContext.getAuthentication());
+
+			if (!canBeStartTokenValidation) {
+				chain.doFilter(request, response);
+				return;
+			}
+
+			final UserDetails user = userDetailsService.loadUserByUsername(username);
+			final boolean validToken = jwtTokenManager.validateToken(authToken, user.getUsername());
+
+			if (!validToken) {
+				chain.doFilter(request, response);
+				return;
+			}
+
+			final UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, null,
+					user.getAuthorities());
+			authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+			securityContext.setAuthentication(authentication);
+
+			log.info("Authentication successful. Logged in username : {} ", username);
+
 			chain.doFilter(request, response);
-			return;
 		}
 
-		final UserDetails user = userDetailsService.loadUserByUsername(username);
-		final boolean validToken = jwtTokenManager.validateToken(authToken, user.getUsername());
-
-		if (!validToken) {
-			chain.doFilter(request, response);
-			return;
-		}
-
-		final UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, null,
-				user.getAuthorities());
-		authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-		securityContext.setAuthentication(authentication);
-
-		log.info("Authentication successful. Logged in username : {} ", username);
-
-		chain.doFilter(request, response);
 	}
-}
+//}
