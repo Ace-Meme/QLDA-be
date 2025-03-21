@@ -4,7 +4,7 @@ server:
 
 supabase:
   url: ${SUPABASE_URL:https://tejxnmdirdoauqjffpph.supabase.co/storage/v1/s3}
-  key: ${SUPABASE_KEY:9a5831b2f6e805681af519876fc670404ac566f0d95df222418b6594841a03bd}
+  key: ${SUPABASE_KEY:0ad52b1be44b28cdf7dbd5cc9abc4082}
   bucket: ${SUPABASE_BUCKET:Qldapm}
 
 spring:

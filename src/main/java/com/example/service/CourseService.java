@@ -164,14 +164,17 @@ public class CourseService {
             List<LearningItem> learningItems = learningItemRepository.findByWeekIdOrderByOrderIndex(week.getId());
             
             List<LearningItemDto> learningItemDtos = learningItems.stream().map(item -> 
-                LearningItemDto.builder()
-                    .id(item.getId())
-                    .title(item.getTitle())
-                    .type(item.getType())
-                    .content(item.getContent())
-                    .durationMinutes(item.getDurationMinutes())
-                    .orderIndex(item.getOrderIndex())
-                    .build()
+                new LearningItemDto(
+                    item.getId(),
+                    item.getTitle(),
+                    item.getType(),
+                    item.getContent(),
+                    item.getDurationMinutes(),
+                    item.getOrderIndex(),
+                    week.getId(),
+                    week.getTitle(),
+                    List.of()
+                )
             ).collect(Collectors.toList());
             
             return WeekDto.builder()
