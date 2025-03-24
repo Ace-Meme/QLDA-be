@@ -41,26 +41,49 @@ public class UserServiceImpl implements UserService {
 	}
 
 	@Override
-	public RegistrationResponse registration(RegistrationRequest registrationRequest) {
-
+	public RegistrationResponse registerStudent(RegistrationRequest registrationRequest) {
 		userValidationService.validateUser(registrationRequest);
 
 		final User user = UserMapper.INSTANCE.convertToUser(registrationRequest);
 		user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
-		user.setUserRole(UserRole.USER);
+		user.setUserRole(UserRole.STUDENT);
 		user.setEmailVerified(false);
-        user.setEmailVerificationToken(UUID.randomUUID().toString());
-        user.setEmailVerificationTokenExpiry(LocalDateTime.now().plusHours(24));
+		user.setEmailVerificationToken(UUID.randomUUID().toString());
+		user.setEmailVerificationTokenExpiry(LocalDateTime.now().plusHours(24));
 
 		userRepository.save(user);
 
 		emailService.sendVerificationEmail(user.getEmail(), user.getEmailVerificationToken());
 
-		final String username = registrationRequest.getUsername();
+		final String username = registrationRequest.getUserName();
 		final String registrationSuccessMessage = generalMessageAccessor.getMessage(null, REGISTRATION_SUCCESSFUL,
 				username);
 
-		log.info("{} registered successfully!", username);
+		log.info("{} registered successfully as a student!", username);
+
+		return new RegistrationResponse(registrationSuccessMessage);
+	}
+
+	@Override
+	public RegistrationResponse registerTeacher(RegistrationRequest registrationRequest) {
+		userValidationService.validateUser(registrationRequest);
+
+		final User user = UserMapper.INSTANCE.convertToUser(registrationRequest);
+		user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
+		user.setUserRole(UserRole.TEACHER);
+		user.setEmailVerified(false);
+		user.setEmailVerificationToken(UUID.randomUUID().toString());
+		user.setEmailVerificationTokenExpiry(LocalDateTime.now().plusHours(24));
+
+		userRepository.save(user);
+
+		emailService.sendVerificationEmail(user.getEmail(), user.getEmailVerificationToken());
+
+		final String username = registrationRequest.getUserName();
+		final String registrationSuccessMessage = generalMessageAccessor.getMessage(null, REGISTRATION_SUCCESSFUL,
+				username);
+
+		log.info("{} registered successfully as a teacher!", username);
 
 		return new RegistrationResponse(registrationSuccessMessage);
 	}

@@ -15,27 +15,27 @@ import lombok.ToString;
 @NoArgsConstructor
 public class RegistrationRequest {
 
-	@NotEmpty(message = "{registration_name_not_empty}")
-	private String name;
+//	@NotEmpty(message = "{registration_name_not_empty}")
+//	private String name;
 
 	@Email(message = "{registration_email_is_not_valid}")
 	@NotEmpty(message = "{registration_email_not_empty}")
 	private String email;
 
 	@NotEmpty(message = "{registration_username_not_empty}")
-	private String username;
+	private String userName;
 
 	@NotEmpty(message = "{registration_password_not_empty}")
 	private String password;
 
 	@NotEmpty(message = "{registration_fullname_not_empty}")
-    private String fullName; 
+    private String fullname;
 
 	@NotNull(message = "{registration_gender_not_null}")
     private Gender gender; 
 
 	@NotNull(message = "{registration_birthyear_not_null}")
-    private Integer birthYear; 
+    private Integer dob;
 	
 	@NotNull(message = "{registration_phone_invalid}")
     private String phoneNumber;

@@ -9,7 +9,9 @@ public interface UserService {
 
 	User findByUsername(String username);
 
-	RegistrationResponse registration(RegistrationRequest registrationRequest);
+	RegistrationResponse registerStudent(RegistrationRequest registrationRequest);
+	
+	RegistrationResponse registerTeacher(RegistrationRequest registrationRequest);
 
 	AuthenticatedUserDto findAuthenticatedUserByUsername(String username);
 

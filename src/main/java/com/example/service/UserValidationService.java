@@ -30,7 +30,7 @@ public class UserValidationService {
 	public void validateUser(RegistrationRequest registrationRequest) {
 
 		final String email = registrationRequest.getEmail();
-		final String username = registrationRequest.getUsername();
+		final String username = registrationRequest.getUserName();
 
 		checkEmail(email);
 		checkUsername(username);
