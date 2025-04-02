@@ -89,7 +89,6 @@ public class CourseService {
                 .price(courseCreateDto.getPrice())
                 .isFree(courseCreateDto.isFree())
                 .isDraft(courseCreateDto.isDraft())
-                .estimatedWeeks(courseCreateDto.getEstimatedWeeks())
                 .summary(courseCreateDto.getSummary())
                 .description(courseCreateDto.getDescription())
                 .thumbnailUrl(courseCreateDto.getThumbnailUrl())
@@ -110,7 +109,6 @@ public class CourseService {
         course.setPrice(courseUpdateDto.getPrice());
         course.setFree(courseUpdateDto.isFree());
         course.setDraft(courseUpdateDto.isDraft());
-        course.setEstimatedWeeks(courseUpdateDto.getEstimatedWeeks());
         course.setSummary(courseUpdateDto.getSummary());
         course.setDescription(courseUpdateDto.getDescription());
         course.setThumbnailUrl(courseUpdateDto.getThumbnailUrl());
