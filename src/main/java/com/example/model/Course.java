@@ -29,8 +29,6 @@ public class Course {
     
     private boolean isDraft;
     
-    private Integer estimatedWeeks;
-    
     private String summary;
     
     @Column(columnDefinition = "TEXT")
@@ -44,4 +42,8 @@ public class Course {
     
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Week> weeks = new ArrayList<>();
+    
+    public Integer getEstimatedWeeks() {
+        return weeks != null ? weeks.size() : 0;
+    }
 }
