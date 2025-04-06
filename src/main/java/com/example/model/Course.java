@@ -5,6 +5,8 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 
 @Getter
 @Setter
@@ -41,7 +43,12 @@ public class Course {
     private User teacher;
     
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<Week> weeks = new ArrayList<>();
+    
+    @ManyToMany(mappedBy = "enrolledCourses", fetch = FetchType.LAZY)
+    @Builder.Default
+    private Set<User> enrolledStudents = new HashSet<>();
     
     public Integer getEstimatedWeeks() {
         return weeks != null ? weeks.size() : 0;
