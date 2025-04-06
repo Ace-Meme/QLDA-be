@@ -30,4 +30,8 @@ public class LearningItem {
     @ManyToOne
     @JoinColumn(name = "week_id")
     private Week week;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "quiz_bank_id")
+    private QuizBank quizBank;
 }

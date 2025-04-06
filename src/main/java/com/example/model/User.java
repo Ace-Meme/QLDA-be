@@ -3,6 +3,8 @@ package com.example.model;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.util.Set;
+import java.util.HashSet;
 
 @Getter
 @Setter
@@ -44,4 +46,13 @@ public class User {
     private String emailVerificationToken;
     
     private LocalDateTime emailVerificationTokenExpiry;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "user_courses",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "course_id")
+    )
+    @Builder.Default
+    private Set<Course> enrolledCourses = new HashSet<>();
 }
