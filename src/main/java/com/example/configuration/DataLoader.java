@@ -22,7 +22,7 @@ public class DataLoader {
     private final UserRepository userRepository;
     private final Random random = new Random();
 
-    @Bean
+    // @Bean  
     @Profile("!prod")
     public CommandLineRunner initData() {
         return args -> {
