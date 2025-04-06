@@ -1,12 +1,16 @@
 package com.example.service;
 
 import com.example.dto.QuizBankDTO;
+import com.example.dto.QuizBankCreateDTO;
+import com.example.dto.QuizBankUpdateDTO;
 import com.example.model.QuizBank;
 import com.example.model.User;
 import com.example.repository.QuizBankRepository;
 import com.example.repository.QuestionRepository;
 import com.example.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,13 +31,19 @@ public class QuizBankService {
     private UserRepository userRepository;
 
     @Transactional
-    public QuizBankDTO createQuizBank(QuizBankDTO quizBankDTO) {
-        User creator = userRepository.findById(quizBankDTO.createdById())
-                .orElseThrow(() -> new IllegalArgumentException("Teacher not found"));
+    public QuizBankDTO createQuizBank(QuizBankCreateDTO createDTO) {
+        // Get authenticated user
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        User creator = userRepository.findByUsername(username);
+        
+        if (creator == null) {
+            throw new IllegalArgumentException("Authenticated user not found");
+        }
         
         QuizBank quizBank = QuizBank.builder()
-                .title(quizBankDTO.title())
-                .description(quizBankDTO.description())
+                .title(createDTO.title())
+                .description(createDTO.description())
                 .createdBy(creator)
                 .creationDate(LocalDateTime.now())
                 .lastModifiedDate(LocalDateTime.now())
@@ -80,14 +90,14 @@ public class QuizBankService {
     }
 
     @Transactional
-    public QuizBankDTO updateQuizBank(Long id, QuizBankDTO quizBankDTO) {
+    public QuizBankDTO updateQuizBank(Long id, QuizBankUpdateDTO updateDTO) {
         QuizBank quizBank = quizBankRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Quiz bank not found"));
         
-        quizBank.setTitle(quizBankDTO.title());
-        quizBank.setDescription(quizBankDTO.description());
+        quizBank.setTitle(updateDTO.title());
+        quizBank.setDescription(updateDTO.description());
         quizBank.setLastModifiedDate(LocalDateTime.now());
-        quizBank.setActive(quizBankDTO.active());
+        quizBank.setActive(updateDTO.active());
         
         QuizBank updatedQuizBank = quizBankRepository.save(quizBank);
         

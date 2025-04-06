@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -116,6 +117,62 @@ public class QuizAttemptService {
         StudentResponse savedResponse = studentResponseRepository.save(response);
         
         return mapToResponseDTO(savedResponse);
+    }
+
+    @Transactional
+    public List<StudentResponseDTO> submitAllAnswers(Long quizAttemptId, List<Map<String, Object>> answers) {
+        QuizAttempt quizAttempt = quizAttemptRepository.findById(quizAttemptId)
+                .orElseThrow(() -> new IllegalArgumentException("Quiz attempt not found"));
+        
+        if (quizAttempt.getStatus() != QuizAttemptStatus.IN_PROGRESS) {
+            throw new IllegalArgumentException("This quiz attempt is already completed");
+        }
+        
+        List<StudentResponse> existingResponses = studentResponseRepository.findByQuizAttempt(quizAttempt);
+        
+        List<StudentResponseDTO> responseList = answers.stream()
+                .map(answer -> {
+                    Long questionId = ((Number) answer.get("questionId")).longValue();
+                    String selectedAnswer = (String) answer.get("selectedAnswer");
+                    
+                    if (questionId == null || selectedAnswer == null) {
+                        throw new IllegalArgumentException("Question ID and selected answer must be provided for all answers");
+                    }
+                    
+                    // Check if question already answered
+                    for (StudentResponse existingResponse : existingResponses) {
+                        if (existingResponse.getQuestion().getId().equals(questionId)) {
+                            throw new IllegalArgumentException("Question " + questionId + " already answered");
+                        }
+                    }
+                    
+                    Question question = questionRepository.findById(questionId)
+                            .orElseThrow(() -> new IllegalArgumentException("Question not found: " + questionId));
+                    
+                    // Verify the question belongs to the quiz bank
+                    if (!question.getQuizBank().getId().equals(quizAttempt.getQuizBank().getId())) {
+                        throw new IllegalArgumentException("Question " + questionId + " does not belong to this quiz");
+                    }
+                    
+                    // Grade the answer - each correct answer is worth 1 point
+                    boolean isCorrect = question.getCorrectAnswer().equals(selectedAnswer);
+                    int pointsEarned = isCorrect ? 1 : 0;
+                    
+                    // Save response
+                    StudentResponse response = StudentResponse.builder()
+                            .quizAttempt(quizAttempt)
+                            .question(question)
+                            .selectedAnswer(selectedAnswer)
+                            .isCorrect(isCorrect)
+                            .pointsEarned(pointsEarned)
+                            .build();
+                    
+                    StudentResponse savedResponse = studentResponseRepository.save(response);
+                    return mapToResponseDTO(savedResponse);
+                })
+                .collect(Collectors.toList());
+        
+        return responseList;
     }
 
     @Transactional

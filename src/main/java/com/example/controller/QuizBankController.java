@@ -2,6 +2,8 @@ package com.example.controller;
 
 import com.example.dto.ApiResponse;
 import com.example.dto.QuizBankDTO;
+import com.example.dto.QuizBankCreateDTO;
+import com.example.dto.QuizBankUpdateDTO;
 import com.example.service.QuizBankService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -30,9 +32,9 @@ public class QuizBankController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid input data")
     })
     @PostMapping
-    public ResponseEntity<ApiResponse<QuizBankDTO>> createQuizBank(@RequestBody QuizBankDTO quizBankDTO) {
+    public ResponseEntity<ApiResponse<QuizBankDTO>> createQuizBank(@RequestBody QuizBankCreateDTO createDTO) {
         try {
-            QuizBankDTO createdQuizBank = quizBankService.createQuizBank(quizBankDTO);
+            QuizBankDTO createdQuizBank = quizBankService.createQuizBank(createDTO);
             return new ResponseEntity<>(new ApiResponse<>("SUCCESS", "Quiz bank created successfully", createdQuizBank), HttpStatus.CREATED);
         } catch (Exception e) {
             return new ResponseEntity<>(new ApiResponse<>("ERROR", e.getMessage(), null), HttpStatus.BAD_REQUEST);
@@ -94,9 +96,9 @@ public class QuizBankController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<QuizBankDTO>> updateQuizBank(
             @Parameter(description = "ID of the quiz bank to update") @PathVariable Long id, 
-            @RequestBody QuizBankDTO quizBankDTO) {
+            @RequestBody QuizBankUpdateDTO updateDTO) {
         try {
-            QuizBankDTO updatedQuizBank = quizBankService.updateQuizBank(id, quizBankDTO);
+            QuizBankDTO updatedQuizBank = quizBankService.updateQuizBank(id, updateDTO);
             return new ResponseEntity<>(new ApiResponse<>("SUCCESS", "Quiz bank updated successfully", updatedQuizBank), HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(new ApiResponse<>("ERROR", e.getMessage(), null), HttpStatus.BAD_REQUEST);
