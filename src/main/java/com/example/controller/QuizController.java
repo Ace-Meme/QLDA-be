@@ -4,16 +4,18 @@ import com.example.dto.ApiResponse;
 import com.example.dto.QuizAttemptDTO;
 import com.example.dto.StudentResponseDTO;
 import com.example.dto.QuizResultDTO;
+import com.example.model.User;
+import com.example.repository.UserRepository;
 import com.example.service.QuizAttemptService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,6 +28,9 @@ public class QuizController {
 
     @Autowired
     private QuizAttemptService quizAttemptService;
+    
+    @Autowired
+    private UserRepository userRepository;
 
     @Operation(summary = "Start a quiz attempt", description = "Start a new quiz attempt for a specific learning item")
     @ApiResponses(value = {
@@ -34,14 +39,23 @@ public class QuizController {
     })
     @PostMapping("/attempt")
     public ResponseEntity<ApiResponse<QuizAttemptDTO>> startQuizAttempt(
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Student ID and learning item ID")
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Learning item ID for the quiz")
             @RequestBody Map<String, Long> request) {
         try {
-            Long studentId = request.get("studentId");
+            // Get student ID from authenticated user
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String username = authentication.getName();
+            User student = userRepository.findByUsername(username);
+            
+            if (student == null) {
+                throw new IllegalArgumentException("Authenticated user not found");
+            }
+            
+            Long studentId = student.getId();
             Long learningItemId = request.get("learningItemId");
             
-            if (studentId == null || learningItemId == null) {
-                throw new IllegalArgumentException("Student ID and learning item ID must be provided");
+            if (learningItemId == null) {
+                throw new IllegalArgumentException("Learning item ID must be provided");
             }
             
             QuizAttemptDTO quizAttempt = quizAttemptService.startQuizAttempt(studentId, learningItemId);
@@ -51,26 +65,52 @@ public class QuizController {
         }
     }
 
-    @Operation(summary = "Submit an answer", description = "Submit an answer for a question in an active quiz attempt")
+    @Operation(summary = "Submit all answers", 
+               description = "Submit multiple answers for questions in an active quiz attempt at once. This is more efficient than submitting answers one by one.")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+        description = "List of question IDs and selected answers",
+        required = true,
+        content = @io.swagger.v3.oas.annotations.media.Content(
+            mediaType = "application/json",
+            examples = {
+                @io.swagger.v3.oas.annotations.media.ExampleObject(
+                    name = "Multiple Quiz Answers",
+                    summary = "Submitting answers for multiple questions",
+                    value = """
+                    [
+                      {
+                        "questionId": 1,
+                        "selectedAnswer": "B"
+                      },
+                      {
+                        "questionId": 2,
+                        "selectedAnswer": "A"
+                      },
+                      {
+                        "questionId": 3,
+                        "selectedAnswer": "C"
+                      }
+                    ]
+                    """
+                )
+            }
+        )
+    )
     @ApiResponses(value = {
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Answer submitted successfully"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid request or answer")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Answers submitted successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid request or answers")
     })
-    @PutMapping("/attempt/{quizAttemptId}/answer")
-    public ResponseEntity<ApiResponse<StudentResponseDTO>> submitAnswer(
-            @Parameter(description = "ID of the quiz attempt") @PathVariable Long quizAttemptId,
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Question ID and selected answer")
-            @RequestBody Map<String, Object> request) {
+    @PutMapping("/attempt/{quizAttemptId}/answers")
+    public ResponseEntity<ApiResponse<List<StudentResponseDTO>>> submitAllAnswers(
+            @Parameter(description = "ID of the quiz attempt", example = "42") @PathVariable Long quizAttemptId,
+            @RequestBody List<Map<String, Object>> answers) {
         try {
-            Long questionId = ((Number) request.get("questionId")).longValue();
-            String selectedAnswer = (String) request.get("selectedAnswer");
-            
-            if (questionId == null || selectedAnswer == null) {
-                throw new IllegalArgumentException("Question ID and selected answer must be provided");
+            if (answers == null || answers.isEmpty()) {
+                throw new IllegalArgumentException("At least one answer must be provided");
             }
             
-            StudentResponseDTO response = quizAttemptService.submitAnswer(quizAttemptId, questionId, selectedAnswer);
-            return new ResponseEntity<>(new ApiResponse<>("SUCCESS", "Answer submitted successfully", response), HttpStatus.OK);
+            List<StudentResponseDTO> responses = quizAttemptService.submitAllAnswers(quizAttemptId, answers);
+            return new ResponseEntity<>(new ApiResponse<>("SUCCESS", "All answers submitted successfully", responses), HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(new ApiResponse<>("ERROR", e.getMessage(), null), HttpStatus.BAD_REQUEST);
         }

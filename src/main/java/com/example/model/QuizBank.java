@@ -30,4 +30,4 @@ public class QuizBank {
     private LocalDateTime lastModifiedDate;
     
     private boolean active;
-} 
+}
