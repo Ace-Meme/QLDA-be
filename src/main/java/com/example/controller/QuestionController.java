@@ -4,6 +4,9 @@ import com.example.model.Question;
 import com.example.repository.QuestionRepository;
 import com.example.security.dto.AuthenticatedUserDto;
 import com.example.service.QuestionService;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import com.example.dto.CreateQuestionRequest;
 import com.example.dto.QuestionResponse;
 
@@ -13,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/question")
+@Tag(name = "Question Management", description = "APIs for managing questions")
 @RequiredArgsConstructor
 public class QuestionController {
 
