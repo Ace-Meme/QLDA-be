@@ -4,6 +4,8 @@ import com.example.model.Question;
 import com.example.repository.QuestionRepository;
 import com.example.security.dto.AuthenticatedUserDto;
 import com.example.service.QuestionService;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -12,6 +14,7 @@ import com.example.dto.QuestionResponse;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -23,10 +26,9 @@ public class QuestionController {
     private final QuestionService questionService;
 
     @PostMapping("/create")
-    public QuestionResponse createQuestion(
-            @AuthenticationPrincipal AuthenticatedUserDto authenticatedUser,
-            @RequestBody CreateQuestionRequest request
-    ) {
-        return questionService.createQuestion(authenticatedUser.getUsername(), request);
+    public QuestionResponse createQuestion(@RequestBody CreateQuestionRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        return questionService.createQuestion(username, request);
     }
 }
