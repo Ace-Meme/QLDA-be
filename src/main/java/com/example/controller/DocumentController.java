@@ -2,58 +2,36 @@ package com.example.controller;
 
 import com.example.dto.ApiResponse;
 import com.example.dto.DocumentDto;
-import com.example.dto.DocumentUploadDto;
 import com.example.service.DocumentService;
+import com.example.service.LearningItemService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.Hidden;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 @RestController
 @RequestMapping("/documents")
-@Tag(name = "Document Management", description = "APIs for managing document resources")
-@Hidden
+@Tag(name = "Document Management", description = "APIs for managing documents and videos")
 public class DocumentController {
 
     @Autowired
     private DocumentService documentService;
-
-    @Operation(
-        summary = "Upload a document",
-        description = "Upload a new document with optional association to a learning item"
-    )
-    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<DocumentDto>> uploadDocument(
-            @Parameter(description = "Document file to upload") @RequestParam("file") MultipartFile file,
-            @Parameter(description = "Document title") @RequestParam("title") String title,
-            @Parameter(description = "Document description (optional)") @RequestParam(value = "description", required = false) String description,
-            @Parameter(description = "Learning item ID to associate with (optional)") @RequestParam(value = "learningItemId", required = false) Long learningItemId,
-            Authentication authentication) {
-        
-        try {
-            DocumentUploadDto uploadDto = new DocumentUploadDto(title, description, learningItemId);
-            DocumentDto documentDto = documentService.uploadDocument(file, uploadDto, authentication.getName());
-            return new ResponseEntity<>(new ApiResponse<>("SUCCESS", "Document uploaded successfully", documentDto), HttpStatus.CREATED);
-        } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(new ApiResponse<>("ERROR", e.getMessage(), null), HttpStatus.BAD_REQUEST);
-        } catch (IOException e) {
-            return new ResponseEntity<>(new ApiResponse<>("ERROR", "Failed to upload document: " + e.getMessage(), null), HttpStatus.INTERNAL_SERVER_ERROR);
-        } catch (Exception e) {
-            return new ResponseEntity<>(new ApiResponse<>("ERROR", "Unexpected error: " + e.getMessage(), null), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
+    
+    @Autowired
+    private LearningItemService learningItemService;
+    
     @Operation(
         summary = "Get document by ID",
         description = "Retrieve a document by its ID"
@@ -61,141 +39,70 @@ public class DocumentController {
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<DocumentDto>> getDocumentById(
             @Parameter(description = "ID of the document") @PathVariable Long id) {
+        
         try {
-            DocumentDto documentDto = documentService.getDocumentById(id);
-            return new ResponseEntity<>(new ApiResponse<>("SUCCESS", "Document retrieved successfully", documentDto), HttpStatus.OK);
+            DocumentDto document = documentService.getDocumentById(id);
+            return new ResponseEntity<>(
+                    new ApiResponse<>("SUCCESS", "Document retrieved successfully", document),
+                    HttpStatus.OK);
         } catch (Exception e) {
-            return new ResponseEntity<>(new ApiResponse<>("ERROR", e.getMessage(), null), HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(
+                    new ApiResponse<>("ERROR", e.getMessage(), null),
+                    HttpStatus.NOT_FOUND);
         }
     }
-
+    
     @Operation(
-        summary = "Get current user documents",
-        description = "Retrieve all documents uploaded by the authenticated user"
+        summary = "Download document by ID",
+        description = "Download a document directly by its ID"
     )
-    @GetMapping("/user")
-    public ResponseEntity<ApiResponse<List<DocumentDto>>> getUserDocuments(Authentication authentication) {
+    @GetMapping("/{id}/download")
+    public ResponseEntity<?> downloadDocument(
+            @Parameter(description = "ID of the document") @PathVariable Long id) {
+        
         try {
-            List<DocumentDto> documents = documentService.getDocumentsByUser(authentication.getName());
-            return new ResponseEntity<>(new ApiResponse<>("SUCCESS", "User documents retrieved successfully", documents), HttpStatus.OK);
+            DocumentDto document = documentService.getDocumentById(id);
+            
+            // Redirect to the file URL
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .header(HttpHeaders.LOCATION, document.fileUrl())
+                    .build();
         } catch (Exception e) {
-            return new ResponseEntity<>(new ApiResponse<>("ERROR", e.getMessage(), null), HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(
+                    new ApiResponse<>("ERROR", e.getMessage(), null),
+                    HttpStatus.NOT_FOUND);
         }
     }
-
+    
     @Operation(
-        summary = "Get documents by learning item",
-        description = "Retrieve all documents associated with a specific learning item"
+        summary = "Download document by learning item ID",
+        description = "Download a document associated with a specific learning item"
     )
-    @GetMapping("/learning-item/{learningItemId}")
-    public ResponseEntity<ApiResponse<List<DocumentDto>>> getDocumentsByLearningItem(
+    @GetMapping("/learning-item/{learningItemId}/download")
+    public ResponseEntity<?> downloadDocumentByLearningItem(
             @Parameter(description = "ID of the learning item") @PathVariable Long learningItemId) {
+        
         try {
+            // Get the document associated with this learning item
             List<DocumentDto> documents = documentService.getDocumentsByLearningItem(learningItemId);
-            return new ResponseEntity<>(new ApiResponse<>("SUCCESS", "Learning item documents retrieved successfully", documents), HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(new ApiResponse<>("ERROR", e.getMessage(), null), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @Operation(
-        summary = "Get standalone documents",
-        description = "Retrieve all documents that are not associated with any learning item"
-    )
-    @GetMapping("/standalone")
-    public ResponseEntity<ApiResponse<List<DocumentDto>>> getStandaloneDocuments() {
-        try {
-            List<DocumentDto> documents = documentService.getStandaloneDocuments();
-            return new ResponseEntity<>(new ApiResponse<>("SUCCESS", "Standalone documents retrieved successfully", documents), HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(new ApiResponse<>("ERROR", e.getMessage(), null), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @Operation(
-        summary = "Search documents",
-        description = "Search for documents by keyword in title or description"
-    )
-    @GetMapping("/search")
-    public ResponseEntity<ApiResponse<List<DocumentDto>>> searchDocuments(
-            @Parameter(description = "Keyword to search in document title and description") @RequestParam String keyword) {
-        try {
-            List<DocumentDto> documents = documentService.searchDocuments(keyword);
-            return new ResponseEntity<>(new ApiResponse<>("SUCCESS", "Search completed successfully", documents), HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(new ApiResponse<>("ERROR", e.getMessage(), null), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @Operation(
-        summary = "Delete document",
-        description = "Delete a document by its ID (only owner can delete)"
-    )
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Boolean>> deleteDocument(
-            @Parameter(description = "ID of the document to delete") @PathVariable Long id, 
-            Authentication authentication) {
-        try {
-            boolean deleted = documentService.deleteDocument(id, authentication.getName());
-            if (deleted) {
-                return new ResponseEntity<>(new ApiResponse<>("SUCCESS", "Document deleted successfully", true), HttpStatus.OK);
-            } else {
-                return new ResponseEntity<>(new ApiResponse<>("ERROR", "Failed to delete document", false), HttpStatus.INTERNAL_SERVER_ERROR);
+            
+            if (documents.isEmpty()) {
+                return new ResponseEntity<>(
+                        new ApiResponse<>("ERROR", "No document found for this learning item", null),
+                        HttpStatus.NOT_FOUND);
             }
+            
+            // Get the document (there should only be one)
+            DocumentDto document = documents.get(0);
+            
+            // Redirect to the file URL
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .header(HttpHeaders.LOCATION, document.fileUrl())
+                    .build();
         } catch (Exception e) {
-            return new ResponseEntity<>(new ApiResponse<>("ERROR", e.getMessage(), false), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @Operation(
-        summary = "Update document",
-        description = "Update document title, description or learning item association"
-    )
-    @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<DocumentDto>> updateDocument(
-            @Parameter(description = "ID of the document to update") @PathVariable Long id,
-            @RequestBody @Valid DocumentUploadDto uploadDto,
-            Authentication authentication) {
-        try {
-            DocumentDto updatedDocument = documentService.updateDocument(id, uploadDto, authentication.getName());
-            return new ResponseEntity<>(new ApiResponse<>("SUCCESS", "Document updated successfully", updatedDocument), HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(new ApiResponse<>("ERROR", e.getMessage(), null), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-    
-    @Operation(
-        summary = "Associate document with learning item",
-        description = "Associate an existing document with a specific learning item"
-    )
-    @PutMapping("/{id}/associate/{learningItemId}")
-    public ResponseEntity<ApiResponse<DocumentDto>> associateWithLearningItem(
-            @Parameter(description = "ID of the document") @PathVariable Long id,
-            @Parameter(description = "ID of the learning item to associate with") @PathVariable Long learningItemId,
-            Authentication authentication) {
-        try {
-            DocumentUploadDto updateDto = new DocumentUploadDto(null, null, learningItemId);
-            DocumentDto updatedDocument = documentService.updateDocument(id, updateDto, authentication.getName());
-            return new ResponseEntity<>(new ApiResponse<>("SUCCESS", "Document associated with learning item successfully", updatedDocument), HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(new ApiResponse<>("ERROR", e.getMessage(), null), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-    
-    @Operation(
-        summary = "Disassociate document from learning item",
-        description = "Remove the association between a document and its learning item"
-    )
-    @PutMapping("/{id}/disassociate")
-    public ResponseEntity<ApiResponse<DocumentDto>> disassociateFromLearningItem(
-            @Parameter(description = "ID of the document") @PathVariable Long id,
-            Authentication authentication) {
-        try {
-            DocumentUploadDto updateDto = new DocumentUploadDto(null, null, null);
-            DocumentDto updatedDocument = documentService.updateDocument(id, updateDto, authentication.getName());
-            return new ResponseEntity<>(new ApiResponse<>("SUCCESS", "Document disassociated from learning item successfully", updatedDocument), HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(new ApiResponse<>("ERROR", e.getMessage(), null), HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(
+                    new ApiResponse<>("ERROR", e.getMessage(), null),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 } 

@@ -16,7 +16,7 @@ public class Document {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     private String title;
     
     private String fileName;
@@ -27,17 +27,34 @@ public class Document {
     
     private String fileUrl;
     
+    @Column(columnDefinition = "TEXT")
     private String description;
     
     private LocalDateTime uploadedAt;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "uploaded_by_id")
+    @ManyToOne
+    @JoinColumn(name = "user_id")
     private User uploadedBy;
     
-    // Optional relationship with learning item
-    // When null, document exists independently
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "learning_item_id")
     private LearningItem learningItem;
+    
+    /**
+     * Indicates if this document is a video file
+     * Used for UI rendering decisions
+     */
+    private Boolean isVideo;
+    
+    /**
+     * Check if this document is a video based on its content type
+     * @return true if content type indicates video
+     */
+    @Transient
+    public boolean isVideoContent() {
+        return contentType != null && 
+               (contentType.startsWith("video/") || 
+                "application/x-mpegURL".equals(contentType) ||
+                "application/vnd.apple.mpegURL".equals(contentType));
+    }
 } 

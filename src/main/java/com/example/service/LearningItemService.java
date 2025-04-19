@@ -34,6 +34,9 @@ public class LearningItemService {
     @Autowired
     private DocumentRepository documentRepository;
     
+    @Autowired
+    private FileStorageService fileStorageService;
+    
     /**
      * Create a new learning item
      * 
@@ -77,7 +80,10 @@ public class LearningItemService {
                 .orElseThrow(() -> new EntityNotFoundException("Learning item not found with id: " + id));
         
         List<Document> documents = documentRepository.findByLearningItem(learningItem);
-        List<DocumentDto> documentDtos = mapToDocumentDtos(documents);
+        // Ensure we only use the first document (there should be only one)
+        List<DocumentDto> documentDtos = documents.isEmpty() ? 
+                List.of() : 
+                List.of(mapToDocumentDto(documents.get(0)));
         
         return mapToLearningItemDto(learningItem, documentDtos);
     }
@@ -97,16 +103,23 @@ public class LearningItemService {
         // Get all documents for all learning items in this week
         List<Document> allDocuments = documentRepository.findByCourseId(week.getCourse().getId());
         
-        // Group documents by learning item ID
-        Map<Long, List<Document>> documentsByLearningItem = allDocuments.stream()
+        // Group documents by learning item ID - but ensure only one document per learning item
+        Map<Long, Document> documentByLearningItem = allDocuments.stream()
                 .filter(doc -> doc.getLearningItem() != null)
-                .collect(Collectors.groupingBy(doc -> doc.getLearningItem().getId()));
+                .collect(Collectors.toMap(
+                    doc -> doc.getLearningItem().getId(), 
+                    doc -> doc, 
+                    (existing, replacement) -> existing  // Keep first one in case of duplicates
+                ));
         
-        // Map each learning item to DTO with its documents
+        // Map each learning item to DTO with its document (if any)
         return learningItems.stream()
                 .map(item -> {
-                    List<Document> itemDocuments = documentsByLearningItem.getOrDefault(item.getId(), List.of());
-                    return mapToLearningItemDto(item, mapToDocumentDtos(itemDocuments));
+                    Document itemDocument = documentByLearningItem.get(item.getId());
+                    List<DocumentDto> documentDtos = (itemDocument != null) ? 
+                            List.of(mapToDocumentDto(itemDocument)) : 
+                            List.of();
+                    return mapToLearningItemDto(item, documentDtos);
                 })
                 .collect(Collectors.toList());
     }
@@ -127,16 +140,23 @@ public class LearningItemService {
         // Get all documents for all learning items in this week
         List<Document> allDocuments = documentRepository.findByCourseId(week.getCourse().getId());
         
-        // Group documents by learning item ID
-        Map<Long, List<Document>> documentsByLearningItem = allDocuments.stream()
+        // Group documents by learning item ID - but ensure only one document per learning item
+        Map<Long, Document> documentByLearningItem = allDocuments.stream()
                 .filter(doc -> doc.getLearningItem() != null)
-                .collect(Collectors.groupingBy(doc -> doc.getLearningItem().getId()));
+                .collect(Collectors.toMap(
+                    doc -> doc.getLearningItem().getId(), 
+                    doc -> doc, 
+                    (existing, replacement) -> existing  // Keep first one in case of duplicates
+                ));
         
-        // Map each learning item to DTO with its documents
+        // Map each learning item to DTO with its document (if any)
         return learningItems.stream()
                 .map(item -> {
-                    List<Document> itemDocuments = documentsByLearningItem.getOrDefault(item.getId(), List.of());
-                    return mapToLearningItemDto(item, mapToDocumentDtos(itemDocuments));
+                    Document itemDocument = documentByLearningItem.get(item.getId());
+                    List<DocumentDto> documentDtos = (itemDocument != null) ? 
+                            List.of(mapToDocumentDto(itemDocument)) : 
+                            List.of();
+                    return mapToLearningItemDto(item, documentDtos);
                 })
                 .collect(Collectors.toList());
     }
@@ -224,12 +244,14 @@ public class LearningItemService {
         // Get all documents associated with this learning item
         List<Document> documents = documentRepository.findByLearningItem(learningItem);
         
-        // Disassociate documents from this learning item instead of deleting them
+        // Delete all associated documents
         for (Document document : documents) {
-            document.setLearningItem(null);
+            // Delete the file from storage
+            fileStorageService.deleteFile(document.getFileUrl());
+            
+            // Delete the document record
+            documentRepository.delete(document);
         }
-        
-        documentRepository.saveAll(documents);
         
         // Delete the learning item
         learningItemRepository.delete(learningItem);
@@ -262,8 +284,26 @@ public class LearningItemService {
                         document.getUploadedAt(),
                         document.getUploadedBy().getId(),
                         document.getUploadedBy().getName(),
-                        document.getLearningItem() != null ? document.getLearningItem().getId() : null
+                        document.getLearningItem() != null ? document.getLearningItem().getId() : null,
+                        document.getIsVideo()
                 ))
                 .collect(Collectors.toList());
+    }
+
+    private DocumentDto mapToDocumentDto(Document document) {
+        return new DocumentDto(
+                document.getId(),
+                document.getTitle(),
+                document.getFileName(),
+                document.getContentType(),
+                document.getFileSize(),
+                document.getFileUrl(),
+                document.getDescription(),
+                document.getUploadedAt(),
+                document.getUploadedBy().getId(),
+                document.getUploadedBy().getName(),
+                document.getLearningItem() != null ? document.getLearningItem().getId() : null,
+                document.getIsVideo()
+        );
     }
 } 

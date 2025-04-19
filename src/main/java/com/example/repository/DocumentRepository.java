@@ -19,6 +19,10 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     
     List<Document> findByLearningItemIsNull();
     
+    List<Document> findByIsVideoTrue();
+    
+    List<Document> findByLearningItemAndIsVideoTrue(LearningItem learningItem);
+    
     @Query("SELECT d FROM Document d WHERE d.learningItem.week.course.id = :courseId")
     List<Document> findByCourseId(@Param("courseId") Long courseId);
     

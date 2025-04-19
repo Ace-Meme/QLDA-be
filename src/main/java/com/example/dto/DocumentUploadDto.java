@@ -1,29 +1,32 @@
 package com.example.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 /**
- * Data Transfer Object for document upload/update operations
- * Contains essential fields required for creating or updating a document
+ * Data Transfer Object for document upload requests
  */
 public record DocumentUploadDto(
     /**
      * Title of the document displayed to users
      */
+    @NotBlank(message = "Title is required")
+    @Size(max = 255, message = "Title must be less than 255 characters")
     String title,
     
     /**
-     * Optional description of the document contents
+     * Optional description of the document
      */
     String description,
     
     /**
-     * Optional ID of learning item to associate this document with
-     * (null if the document should be standalone)
+     * ID of the learning item to associate this document with (optional)
      */
-    Long learningItemId
-) {
-    public DocumentUploadDto {
-        if (title == null || title.isBlank()) {
-            throw new IllegalArgumentException("Document title cannot be null or blank");
-        }
-    }
-} 
+    Long learningItemId,
+    
+    /**
+     * Indicates if this document should be treated as a video
+     * If null, will be auto-determined from file content type
+     */
+    Boolean isVideo
+) {} 

@@ -61,6 +61,18 @@ public class DocumentService {
         String directory = learningItem != null ? "courses/" + learningItem.getWeek().getCourse().getId() : "documents";
         String fileUrl = fileStorageService.uploadFile(file, directory);
         
+        // Determine if this is a video file
+        boolean isVideo = false;
+        if (uploadDto.isVideo() != null) {
+            isVideo = uploadDto.isVideo();
+        } else {
+            String contentType = file.getContentType();
+            isVideo = contentType != null && 
+                     (contentType.startsWith("video/") || 
+                      "application/x-mpegURL".equals(contentType) ||
+                      "application/vnd.apple.mpegURL".equals(contentType));
+        }
+        
         // Create document entity
         Document document = Document.builder()
                 .title(uploadDto.title())
@@ -72,6 +84,7 @@ public class DocumentService {
                 .uploadedAt(LocalDateTime.now())
                 .uploadedBy(user)
                 .learningItem(learningItem)
+                .isVideo(isVideo)
                 .build();
         
         Document savedDocument = documentRepository.save(document);
@@ -134,6 +147,34 @@ public class DocumentService {
     public List<DocumentDto> getStandaloneDocuments() {
         List<Document> documents = documentRepository.findByLearningItemIsNull();
         return documents.stream()
+                .map(this::mapToDocumentDto)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Get all video documents
+     * 
+     * @return List of document DTOs representing videos
+     */
+    public List<DocumentDto> getAllVideos() {
+        List<Document> videos = documentRepository.findByIsVideoTrue();
+        return videos.stream()
+                .map(this::mapToDocumentDto)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Get all video documents for a specific learning item
+     * 
+     * @param learningItemId Learning item ID
+     * @return List of document DTOs representing videos
+     */
+    public List<DocumentDto> getVideosByLearningItem(Long learningItemId) {
+        LearningItem learningItem = learningItemRepository.findById(learningItemId)
+                .orElseThrow(() -> new EntityNotFoundException("Learning item not found with id: " + learningItemId));
+        
+        List<Document> videos = documentRepository.findByLearningItemAndIsVideoTrue(learningItem);
+        return videos.stream()
                 .map(this::mapToDocumentDto)
                 .collect(Collectors.toList());
     }
@@ -218,6 +259,10 @@ public class DocumentService {
             document.setDescription(uploadDto.description());
         }
         
+        if (uploadDto.isVideo() != null) {
+            document.setIsVideo(uploadDto.isVideo());
+        }
+        
         // Update learning item if provided
         if (uploadDto.learningItemId() != null) {
             LearningItem learningItem = learningItemRepository.findById(uploadDto.learningItemId())
@@ -246,7 +291,8 @@ public class DocumentService {
                 document.getUploadedAt(),
                 document.getUploadedBy().getId(),
                 document.getUploadedBy().getName(),
-                document.getLearningItem() != null ? document.getLearningItem().getId() : null
+                document.getLearningItem() != null ? document.getLearningItem().getId() : null,
+                document.getIsVideo()
         );
     }
 } 

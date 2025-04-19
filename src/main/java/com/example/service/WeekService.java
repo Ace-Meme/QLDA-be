@@ -26,6 +26,7 @@ public class WeekService {
     private final WeekRepository weekRepository;
     private final CourseRepository courseRepository;
     private final LearningItemRepository learningItemRepository;
+    private final LearningItemService learningItemService;
 
     @Transactional(readOnly = true)
     public List<WeekDto> getWeeksByCourseId(Long courseId) {
@@ -112,21 +113,8 @@ public class WeekService {
     }
     
     private WeekDto mapToWeekDto(Week week) {
-        List<LearningItem> learningItems = learningItemRepository.findByWeekIdOrderByOrderIndex(week.getId());
-        
-        List<LearningItemDto> learningItemDtos = learningItems.stream()
-                .map(item -> new LearningItemDto(
-                        item.getId(),
-                        item.getTitle(),
-                        item.getType(),
-                        item.getContent(),
-                        item.getDurationMinutes(),
-                        item.getOrderIndex(),
-                        week.getId(),
-                        week.getTitle(),
-                        List.of()
-                ))
-                .collect(Collectors.toList());
+        // Get learning items with documents loaded using LearningItemService
+        List<LearningItemDto> learningItemDtos = learningItemService.getLearningItemsByWeek(week.getId());
         
         return WeekDto.builder()
                 .id(week.getId())
