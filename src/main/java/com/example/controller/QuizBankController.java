@@ -1,9 +1,11 @@
 package com.example.controller;
 
 import com.example.dto.ApiResponse;
+import com.example.dto.LearningItemDto;
 import com.example.dto.QuizBankDTO;
 import com.example.dto.QuizBankCreateDTO;
 import com.example.dto.QuizBankUpdateDTO;
+import com.example.dto.QuizBankLearningItemAssociationDto;
 import com.example.service.QuizBankService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -11,6 +13,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -118,6 +121,41 @@ public class QuizBankController {
             return new ResponseEntity<>(new ApiResponse<>("SUCCESS", "Quiz bank deleted successfully", null), HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(new ApiResponse<>("ERROR", e.getMessage(), null), HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @Operation(
+        summary = "Associate quiz bank with learning item",
+        description = "Associate a quiz bank with a learning item of type QUIZ. This is required before students can take the quiz."
+    )
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "Quiz bank associated successfully",
+            content = @Content(schema = @Schema(implementation = ApiResponse.class))
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "400", 
+            description = "Invalid request, learning item is not a quiz, or quiz bank is not active"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404", 
+            description = "Quiz bank or learning item not found"
+        )
+    })
+    @PutMapping("/{id}/learning-items")
+    public ResponseEntity<ApiResponse<LearningItemDto>> associateLearningItem(
+            @Parameter(description = "ID of the quiz bank", required = true) @PathVariable Long id,
+            @Valid @RequestBody QuizBankLearningItemAssociationDto associationDto) {
+        try {
+            LearningItemDto updatedItem = quizBankService.associateLearningItem(id, associationDto);
+            return new ResponseEntity<>(new ApiResponse<>("SUCCESS", "Quiz bank associated with learning item successfully", updatedItem), HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(new ApiResponse<>("ERROR", e.getMessage(), null), HttpStatus.BAD_REQUEST);
+        } catch (jakarta.persistence.EntityNotFoundException e) {
+            return new ResponseEntity<>(new ApiResponse<>("ERROR", e.getMessage(), null), HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            return new ResponseEntity<>(new ApiResponse<>("ERROR", "An unexpected error occurred: " + e.getMessage(), null), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 } 

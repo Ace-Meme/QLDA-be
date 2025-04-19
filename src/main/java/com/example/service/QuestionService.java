@@ -1,6 +1,8 @@
 package com.example.service;
 
+import com.example.dto.QuestionCreateDTO;
 import com.example.dto.QuestionDTO;
+import com.example.dto.QuestionUpdateDTO;
 import com.example.model.Question;
 import com.example.model.QuizBank;
 import com.example.repository.QuestionRepository;
@@ -29,23 +31,23 @@ public class QuestionService {
     private ObjectMapper objectMapper;
 
     @Transactional
-    public QuestionDTO createQuestion(QuestionDTO questionDTO) {
-        QuizBank quizBank = quizBankRepository.findById(questionDTO.quizBankId())
+    public QuestionDTO createQuestion(QuestionCreateDTO questionCreateDTO) {
+        QuizBank quizBank = quizBankRepository.findById(questionCreateDTO.quizBankId())
                 .orElseThrow(() -> new IllegalArgumentException("Quiz bank not found"));
         
         String optionsJson;
         try {
-            optionsJson = objectMapper.writeValueAsString(questionDTO.options());
+            optionsJson = objectMapper.writeValueAsString(questionCreateDTO.options());
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException("Error parsing options: " + e.getMessage());
         }
         
         Question question = Question.builder()
                 .quizBank(quizBank)
-                .questionText(questionDTO.questionText())
-                .questionType(questionDTO.questionType())
+                .questionText(questionCreateDTO.questionText())
+                .questionType(questionCreateDTO.questionType())
                 .options(optionsJson)
-                .correctAnswer(questionDTO.correctAnswer())
+                .correctAnswer(questionCreateDTO.correctAnswer())
                 .build();
         
         Question savedQuestion = questionRepository.save(question);
@@ -80,21 +82,21 @@ public class QuestionService {
     }
 
     @Transactional
-    public QuestionDTO updateQuestion(Long id, QuestionDTO questionDTO) {
+    public QuestionDTO updateQuestion(Long id, QuestionUpdateDTO questionUpdateDTO) {
         Question question = questionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Question not found"));
         
         String optionsJson;
         try {
-            optionsJson = objectMapper.writeValueAsString(questionDTO.options());
+            optionsJson = objectMapper.writeValueAsString(questionUpdateDTO.options());
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException("Error parsing options: " + e.getMessage());
         }
         
-        question.setQuestionText(questionDTO.questionText());
-        question.setQuestionType(questionDTO.questionType());
+        question.setQuestionText(questionUpdateDTO.questionText());
+        question.setQuestionType(questionUpdateDTO.questionType());
         question.setOptions(optionsJson);
-        question.setCorrectAnswer(questionDTO.correctAnswer());
+        question.setCorrectAnswer(questionUpdateDTO.correctAnswer());
         
         Question updatedQuestion = questionRepository.save(question);
         

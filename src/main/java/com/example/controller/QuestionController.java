@@ -1,7 +1,9 @@
 package com.example.controller;
 
 import com.example.dto.ApiResponse;
+import com.example.dto.QuestionCreateDTO;
 import com.example.dto.QuestionDTO;
+import com.example.dto.QuestionUpdateDTO;
 import com.example.service.QuestionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -30,9 +32,9 @@ public class QuestionController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid input data")
     })
     @PostMapping
-    public ResponseEntity<ApiResponse<QuestionDTO>> createQuestion(@RequestBody QuestionDTO questionDTO) {
+    public ResponseEntity<ApiResponse<QuestionDTO>> createQuestion(@RequestBody QuestionCreateDTO questionCreateDTO) {
         try {
-            QuestionDTO createdQuestion = questionService.createQuestion(questionDTO);
+            QuestionDTO createdQuestion = questionService.createQuestion(questionCreateDTO);
             return new ResponseEntity<>(new ApiResponse<>("SUCCESS", "Question created successfully", createdQuestion), HttpStatus.CREATED);
         } catch (Exception e) {
             return new ResponseEntity<>(new ApiResponse<>("ERROR", e.getMessage(), null), HttpStatus.BAD_REQUEST);
@@ -96,9 +98,9 @@ public class QuestionController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<QuestionDTO>> updateQuestion(
             @Parameter(description = "ID of the question to update") @PathVariable Long id, 
-            @RequestBody QuestionDTO questionDTO) {
+            @RequestBody QuestionUpdateDTO questionUpdateDTO) {
         try {
-            QuestionDTO updatedQuestion = questionService.updateQuestion(id, questionDTO);
+            QuestionDTO updatedQuestion = questionService.updateQuestion(id, questionUpdateDTO);
             return new ResponseEntity<>(new ApiResponse<>("SUCCESS", "Question updated successfully", updatedQuestion), HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(new ApiResponse<>("ERROR", e.getMessage(), null), HttpStatus.BAD_REQUEST);

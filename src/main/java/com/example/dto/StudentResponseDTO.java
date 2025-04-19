@@ -6,6 +6,7 @@ public record StudentResponseDTO(
     Long questionId,
     String questionText,
     String selectedAnswer,
+    String correctAnswer,
     Boolean isCorrect,
     Integer pointsEarned
 ) {

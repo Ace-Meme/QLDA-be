@@ -3,14 +3,8 @@ package com.example.dto;
 public record QuizBankUpdateDTO(
     String title,
     String description,
-    boolean active
+    Boolean active
 ) {
-    public QuizBankUpdateDTO {
-        if (title == null || title.isBlank()) {
-            throw new IllegalArgumentException("Quiz title cannot be blank");
-        }
-        if (description == null) {
-            description = "";
-        }
-    }
+    // Removed compact constructor to allow null values for partial updates
+    // Validation (e.g., non-blank title if provided) should be handled in the service layer.
 } 

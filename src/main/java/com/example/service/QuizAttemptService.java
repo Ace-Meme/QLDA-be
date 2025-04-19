@@ -89,7 +89,12 @@ public class QuizAttemptService {
                 .orElseThrow(() -> new IllegalArgumentException("Question not found"));
         
         // Verify the question belongs to the quiz bank
-        if (!question.getQuizBank().getId().equals(quizAttempt.getQuizBank().getId())) {
+        QuizBank questionQuizBank = question.getQuizBank();
+        if (questionQuizBank == null) {
+            throw new IllegalArgumentException("Question does not have an associated quiz bank");
+        }
+        
+        if (!questionQuizBank.getId().equals(quizAttempt.getQuizBank().getId())) {
             throw new IllegalArgumentException("Question does not belong to this quiz");
         }
         
@@ -150,7 +155,12 @@ public class QuizAttemptService {
                             .orElseThrow(() -> new IllegalArgumentException("Question not found: " + questionId));
                     
                     // Verify the question belongs to the quiz bank
-                    if (!question.getQuizBank().getId().equals(quizAttempt.getQuizBank().getId())) {
+                    QuizBank questionQuizBank = question.getQuizBank();
+                    if (questionQuizBank == null) {
+                        throw new IllegalArgumentException("Question " + questionId + " does not have an associated quiz bank");
+                    }
+                    
+                    if (!questionQuizBank.getId().equals(quizAttempt.getQuizBank().getId())) {
                         throw new IllegalArgumentException("Question " + questionId + " does not belong to this quiz");
                     }
                     
@@ -208,6 +218,7 @@ public class QuizAttemptService {
         return getQuizResults(completedAttempt.getId());
     }
 
+    @Transactional(readOnly = true)
     public List<QuizAttemptDTO> getQuizAttemptsByStudentId(Long studentId) {
         User student = userRepository.findById(studentId)
                 .orElseThrow(() -> new IllegalArgumentException("Student not found"));
@@ -219,6 +230,7 @@ public class QuizAttemptService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public QuizAttemptDTO getQuizAttemptById(Long id) {
         QuizAttempt quizAttempt = quizAttemptRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Quiz attempt not found"));
@@ -226,6 +238,7 @@ public class QuizAttemptService {
         return mapToDTO(quizAttempt);
     }
 
+    @Transactional(readOnly = true)
     public QuizResultDTO getQuizResults(Long quizAttemptId) {
         QuizAttempt quizAttempt = quizAttemptRepository.findById(quizAttemptId)
                 .orElseThrow(() -> new IllegalArgumentException("Quiz attempt not found"));
@@ -253,6 +266,7 @@ public class QuizAttemptService {
         );
     }
 
+    @Transactional(readOnly = true)
     public List<QuizResultDTO> getStudentQuizHistory(Long studentId, Long learningItemId) {
         List<QuizAttempt> attempts = quizAttemptRepository.findByStudentIdAndLearningItemId(studentId, learningItemId);
         
@@ -262,6 +276,7 @@ public class QuizAttemptService {
                 .collect(Collectors.toList());
     }
     
+    @Transactional(readOnly = true)
     private QuizAttemptDTO mapToDTO(QuizAttempt quizAttempt) {
         return new QuizAttemptDTO(
                 quizAttempt.getId(),
@@ -285,6 +300,7 @@ public class QuizAttemptService {
                 response.getQuestion().getId(),
                 response.getQuestion().getQuestionText(),
                 response.getSelectedAnswer(),
+                response.getQuestion().getCorrectAnswer(),
                 response.getIsCorrect(),
                 response.getPointsEarned()
         );

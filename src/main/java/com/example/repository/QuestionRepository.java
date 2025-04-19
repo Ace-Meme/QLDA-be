@@ -15,7 +15,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     @Query("SELECT q FROM Question q WHERE q.quizBank.id = :quizBankId ORDER BY q.id")
     List<Question> findByQuizBankId(Long quizBankId);
     
-    @Query("SELECT q FROM Question q WHERE q.quizBank.id = :quizBankId ORDER BY FUNCTION('RAND')")
+    @Query("SELECT q FROM Question q WHERE q.quizBank.id = :quizBankId ORDER BY FUNCTION('RANDOM')")
     List<Question> findRandomQuestionsByQuizBankId(Long quizBankId);
     
     @Query("SELECT COUNT(q) FROM Question q WHERE q.quizBank.id = :quizBankId")
