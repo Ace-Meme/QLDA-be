@@ -4,13 +4,17 @@ import com.example.dto.DocumentDto;
 import com.example.dto.LearningItemCreateDto;
 import com.example.dto.LearningItemDto;
 import com.example.dto.LearningItemUpdateDto;
+import com.example.dto.QuizBankDTO;
 import com.example.model.Document;
 import com.example.model.LearningItem;
 import com.example.model.LearningItemType;
 import com.example.model.Week;
+import com.example.model.QuizBank;
 import com.example.repository.DocumentRepository;
 import com.example.repository.LearningItemRepository;
 import com.example.repository.WeekRepository;
+import com.example.repository.QuizBankRepository;
+import com.example.repository.QuestionRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +40,12 @@ public class LearningItemService {
     
     @Autowired
     private FileStorageService fileStorageService;
+    
+    @Autowired
+    private QuizBankRepository quizBankRepository;
+    
+    @Autowired
+    private QuestionRepository questionRepository;
     
     /**
      * Create a new learning item
@@ -75,6 +85,7 @@ public class LearningItemService {
      * @param id Learning item ID
      * @return The learning item DTO
      */
+    @Transactional(readOnly = true)
     public LearningItemDto getLearningItemById(Long id) {
         LearningItem learningItem = learningItemRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Learning item not found with id: " + id));
@@ -94,6 +105,7 @@ public class LearningItemService {
      * @param weekId Week ID
      * @return List of learning item DTOs
      */
+    @Transactional(readOnly = true)
     public List<LearningItemDto> getLearningItemsByWeek(Long weekId) {
         Week week = weekRepository.findById(weekId)
                 .orElseThrow(() -> new EntityNotFoundException("Week not found with id: " + weekId));
@@ -131,6 +143,7 @@ public class LearningItemService {
      * @param type Learning item type
      * @return List of learning item DTOs
      */
+    @Transactional(readOnly = true)
     public List<LearningItemDto> getLearningItemsByWeekAndType(Long weekId, LearningItemType type) {
         Week week = weekRepository.findById(weekId)
                 .orElseThrow(() -> new EntityNotFoundException("Week not found with id: " + weekId));
@@ -258,6 +271,30 @@ public class LearningItemService {
     }
     
     private LearningItemDto mapToLearningItemDto(LearningItem learningItem, List<DocumentDto> documents) {
+        // Get QuizBank info if learning item is a QUIZ and has associated quiz bank
+        QuizBankDTO quizBankDTO = null;
+        if (learningItem.getType() == LearningItemType.QUIZ && learningItem.getQuizBank() != null) {
+            Long quizBankId = learningItem.getQuizBank().getId();
+            // Fetch the quiz bank explicitly from the repository to avoid lazy loading issues
+            QuizBank quizBank = quizBankRepository.findById(quizBankId)
+                    .orElse(null);
+            
+            if (quizBank != null) {
+                Long questionCount = questionRepository.countByQuizBankId(quizBank.getId());
+                quizBankDTO = new QuizBankDTO(
+                    quizBank.getId(),
+                    quizBank.getTitle(),
+                    quizBank.getDescription(),
+                    quizBank.getCreatedBy().getId(),
+                    quizBank.getCreatedBy().getName(),
+                    quizBank.getCreationDate(),
+                    quizBank.getLastModifiedDate(),
+                    quizBank.isActive(),
+                    questionCount
+                );
+            }
+        }
+        
         return new LearningItemDto(
                 learningItem.getId(),
                 learningItem.getTitle(),
@@ -267,26 +304,14 @@ public class LearningItemService {
                 learningItem.getOrderIndex(),
                 learningItem.getWeek().getId(),
                 learningItem.getWeek().getTitle(),
-                documents
+                documents,
+                quizBankDTO
         );
     }
     
     private List<DocumentDto> mapToDocumentDtos(List<Document> documents) {
         return documents.stream()
-                .map(document -> new DocumentDto(
-                        document.getId(),
-                        document.getTitle(),
-                        document.getFileName(),
-                        document.getContentType(),
-                        document.getFileSize(),
-                        document.getFileUrl(),
-                        document.getDescription(),
-                        document.getUploadedAt(),
-                        document.getUploadedBy().getId(),
-                        document.getUploadedBy().getName(),
-                        document.getLearningItem() != null ? document.getLearningItem().getId() : null,
-                        document.getIsVideo()
-                ))
+                .map(this::mapToDocumentDto)
                 .collect(Collectors.toList());
     }
 

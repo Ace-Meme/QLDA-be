@@ -3,6 +3,8 @@ package com.example.service;
 import com.example.dto.QuizAttemptDTO;
 import com.example.dto.StudentResponseDTO;
 import com.example.dto.QuizResultDTO;
+import com.example.dto.QuestionDTO;
+import com.example.dto.QuizAttemptWithQuestionsDTO;
 import com.example.model.*;
 import com.example.repository.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -303,6 +305,59 @@ public class QuizAttemptService {
                 response.getQuestion().getCorrectAnswer(),
                 response.getIsCorrect(),
                 response.getPointsEarned()
+        );
+    }
+
+    @Transactional
+    public QuizAttemptWithQuestionsDTO startQuizAttemptWithQuestions(Long studentId, Long learningItemId, Integer questionCount) {
+        User student = userRepository.findById(studentId)
+                .orElseThrow(() -> new IllegalArgumentException("Student not found"));
+        
+        LearningItem learningItem = learningItemRepository.findById(learningItemId)
+                .orElseThrow(() -> new IllegalArgumentException("Learning item not found"));
+        
+        if (learningItem.getType() != LearningItemType.QUIZ) {
+            throw new IllegalArgumentException("Learning item is not a quiz");
+        }
+        
+        QuizBank quizBank = learningItem.getQuizBank();
+        if (quizBank == null) {
+            throw new IllegalArgumentException("No quiz bank associated with this learning item");
+        }
+        
+        // Check if there's an in-progress attempt
+        quizAttemptRepository.findByStudentAndLearningItemAndStatus(student, learningItem, QuizAttemptStatus.IN_PROGRESS)
+                .ifPresent(existingAttempt -> {
+                    throw new IllegalArgumentException("There is already an in-progress quiz attempt");
+                });
+        
+        // Create new attempt
+        QuizAttempt quizAttempt = QuizAttempt.builder()
+                .student(student)
+                .quizBank(quizBank)
+                .learningItem(learningItem)
+                .startTime(LocalDateTime.now())
+                .status(QuizAttemptStatus.IN_PROGRESS)
+                .build();
+        
+        QuizAttempt savedAttempt = quizAttemptRepository.save(quizAttempt);
+        
+        // Get random questions for this quiz
+        List<QuestionDTO> randomQuestions = questionService.getRandomQuestionsByQuizBankId(quizBank.getId(), questionCount);
+        
+        return new QuizAttemptWithQuestionsDTO(
+                savedAttempt.getId(),
+                savedAttempt.getStudent().getId(),
+                savedAttempt.getStudent().getName(),
+                savedAttempt.getQuizBank().getId(),
+                savedAttempt.getQuizBank().getTitle(),
+                savedAttempt.getLearningItem().getId(),
+                savedAttempt.getStartTime(),
+                savedAttempt.getEndTime(),
+                savedAttempt.getTotalScore(),
+                savedAttempt.getMaxPossibleScore(),
+                savedAttempt.getStatus(),
+                randomQuestions
         );
     }
 } 

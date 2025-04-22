@@ -51,7 +51,12 @@ public record LearningItemDto(
     /**
      * List of documents associated with this learning item
      */
-    List<DocumentDto> documents
+    List<DocumentDto> documents,
+    
+    /**
+     * Quiz bank associated with this learning item (only for QUIZ type)
+     */
+    QuizBankDTO quizBank
 ) {
     public LearningItemDto {
         if (documents == null) {

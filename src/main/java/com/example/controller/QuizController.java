@@ -4,6 +4,7 @@ import com.example.dto.ApiResponse;
 import com.example.dto.QuizAttemptDTO;
 import com.example.dto.StudentResponseDTO;
 import com.example.dto.QuizResultDTO;
+import com.example.dto.QuizAttemptWithQuestionsDTO;
 import com.example.model.User;
 import com.example.repository.UserRepository;
 import com.example.service.QuizAttemptService;
@@ -37,12 +38,12 @@ public class QuizController {
 
     @Operation(
         summary = "Start a quiz attempt", 
-        description = "Initiate a new quiz attempt for a specific learning item. The student ID is automatically retrieved from the authenticated user. Returns the created quiz attempt with its unique ID that should be used in subsequent API calls."
+        description = "Initiate a new quiz attempt for a specific learning item. The student ID is automatically retrieved from the authenticated user. Returns the created quiz attempt with its unique ID and randomized questions for the quiz."
     )
     @ApiResponses(value = {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "201", 
-            description = "Quiz attempt created successfully",
+            description = "Quiz attempt created successfully with randomized questions",
             content = @Content(schema = @Schema(implementation = ApiResponse.class))
         ),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -55,19 +56,19 @@ public class QuizController {
         )
     })
     @PostMapping("/attempt")
-    public ResponseEntity<ApiResponse<QuizAttemptDTO>> startQuizAttempt(
+    public ResponseEntity<ApiResponse<QuizAttemptWithQuestionsDTO>> startQuizAttempt(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                description = "Request body containing the ID of the learning item (quiz) to attempt",
+                description = "Request body containing the ID of the learning item (quiz) to attempt and optionally the number of questions to include",
                 required = true,
                 content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(
                         requiredProperties = {"learningItemId"},
-                        example = "{\"learningItemId\": 123}"
+                        example = "{\"learningItemId\": 123, \"questionCount\": 10}"
                     )
                 )
             )
-            @RequestBody Map<String, Long> request) {
+            @RequestBody Map<String, Object> request) {
         try {
             // Get student ID from authenticated user
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -79,13 +80,19 @@ public class QuizController {
             }
             
             Long studentId = student.getId();
-            Long learningItemId = request.get("learningItemId");
+            Long learningItemId = ((Number) request.get("learningItemId")).longValue();
             
             if (learningItemId == null) {
                 throw new IllegalArgumentException("Learning item ID must be provided");
             }
             
-            QuizAttemptDTO quizAttempt = quizAttemptService.startQuizAttempt(studentId, learningItemId);
+            // Default to 10 questions if not specified
+            Integer questionCount = 10;
+            if (request.containsKey("questionCount")) {
+                questionCount = ((Number) request.get("questionCount")).intValue();
+            }
+            
+            QuizAttemptWithQuestionsDTO quizAttempt = quizAttemptService.startQuizAttemptWithQuestions(studentId, learningItemId, questionCount);
             return new ResponseEntity<>(new ApiResponse<>("SUCCESS", "Quiz attempt started successfully", quizAttempt), HttpStatus.CREATED);
         } catch (Exception e) {
             return new ResponseEntity<>(new ApiResponse<>("ERROR", e.getMessage(), null), HttpStatus.BAD_REQUEST);
