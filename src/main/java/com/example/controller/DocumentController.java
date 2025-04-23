@@ -51,6 +51,26 @@ public class DocumentController {
                     HttpStatus.NOT_FOUND);
         }
     }
+
+    @Operation(
+            summary = "Get document by learning-item's ID",
+            description = "Retrieve a document by learning-item's ID"
+    )
+    @GetMapping("/lesson/{id}")
+    public ResponseEntity<ApiResponse<List<DocumentDto>>> getDocumentByLearningItemId(
+            @Parameter(description = "ID of the learning-item") @PathVariable Long id) {
+
+        try {
+            List<DocumentDto> documents = documentService.getDocumentsByLearningItem(id);
+            return new ResponseEntity<>(
+                    new ApiResponse<>("SUCCESS", "Document retrieved successfully", documents),
+                    HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(
+                    new ApiResponse<>("ERROR", e.getMessage(), null),
+                    HttpStatus.NOT_FOUND);
+        }
+    }
     
     @Operation(
         summary = "Download document by ID",
