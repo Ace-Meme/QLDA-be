@@ -346,4 +346,39 @@ public class QuizController {
             return new ResponseEntity<>(new ApiResponse<>("ERROR", e.getMessage(), null), HttpStatus.NOT_FOUND);
         }
     }
+
+    @Operation(
+        summary = "Get current user's quiz attempts", 
+        description = "Retrieve all quiz attempts (both in-progress and completed) for the currently authenticated user. " +
+                      "Results are returned in chronological order with the most recent attempts first."
+    )
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "Current user's quiz attempts retrieved successfully. Returns list of all attempts.",
+            content = @Content(schema = @Schema(implementation = ApiResponse.class))
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "401", 
+            description = "Unauthorized - user not authenticated"
+        )
+    })
+    @GetMapping("/attempt/current")
+    public ResponseEntity<ApiResponse<List<QuizAttemptDTO>>> getCurrentUserQuizAttempts() {
+        try {
+            // Get student ID from authenticated user
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String username = authentication.getName();
+            User student = userRepository.findByUsername(username);
+            
+            if (student == null) {
+                throw new IllegalArgumentException("Authenticated user not found");
+            }
+            
+            List<QuizAttemptDTO> attempts = quizAttemptService.getQuizAttemptsByStudentId(student.getId());
+            return new ResponseEntity<>(new ApiResponse<>("SUCCESS", "Current user's quiz attempts retrieved successfully", attempts), HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(new ApiResponse<>("ERROR", e.getMessage(), null), HttpStatus.BAD_REQUEST);
+        }
+    }
 } 

@@ -70,7 +70,7 @@ logging:
 jwt:
   secretKey: secret
   issuer: www.farukgenc.com
-  expirationMinute: 10
+  expirationMinute: 300
 
 swagger:
   contact-name: Faruk Genc
