@@ -20,6 +20,8 @@ public class CourseCreateDto {
     private BigDecimal price;
     private boolean isFree;
     private boolean isDraft;
+
+    private String userName;
     
     @Size(max = 500, message = "Summary must be less than 500 characters")
     private String summary;

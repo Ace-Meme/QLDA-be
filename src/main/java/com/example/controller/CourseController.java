@@ -64,7 +64,7 @@ public class CourseController {
     public ResponseEntity<CourseDto> createCourse(@Valid @RequestBody CourseCreateDto courseCreateDto) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
-        CourseDto createdCourse = courseService.createCourse(courseCreateDto, username);
+        CourseDto createdCourse = courseService.createCourse(courseCreateDto, courseCreateDto.getUserName());
         return ResponseEntity.status(HttpStatus.CREATED).body(createdCourse);
     }
 
